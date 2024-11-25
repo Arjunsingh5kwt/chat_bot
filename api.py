@@ -14,7 +14,7 @@ class userresponse(BaseModel):
     
 # Load the model and dataset
 sentence_model = models.load_model()
-file_path = r"cleaned_file3.csv"
+file_path = r"cleaned_data.csv"
 data = models.load_csv_data(file_path)
 sentences = list(data["question"])
 
