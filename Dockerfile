@@ -5,10 +5,19 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Step 3 copy the file
-COPY . /app
+# COPY . /app
+
+# Install dependencies
+COPY requirements.txt .
 
 #step 4 
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Uvicorn if not present
+RUN pip install uvicorn
+
+# Copy the current directory contents into the container at /app
+COPY . .
 
 # step 5
 EXPOSE 8000
