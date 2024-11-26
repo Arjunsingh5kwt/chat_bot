@@ -1,26 +1,60 @@
+import pickle
 from sentence_transformers import SentenceTransformer, util
+from rank_bm25 import BM25Okapi
+from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import pandas as pd
 
+# Save an object using pickle
+def save_with_pickle(obj, file_path):
+    with open(file_path, 'wb') as file:
+        pickle.dump(obj, file)
+
+# Load an object using pickle
+def load_with_pickle(file_path):
+    with open(file_path, 'rb') as file:
+        return pickle.load(file)
+
+# Load SentenceTransformer model
 def load_model():
     return SentenceTransformer('all-MiniLM-L12-v2')
 
-def encode_sentences(model, sentences):
-    return model.encode(sentences, convert_to_tensor=True)
+# Encode sentences and optionally save embeddings
+def encode_sentences(model, sentences, pickle_path=None):
+    if pickle_path:
+        try:
+            # Attempt to load embeddings from pickle
+            return load_with_pickle(pickle_path)
+        except FileNotFoundError:
+            print(f"Pickle file {pickle_path} not found. Generating embeddings...")
+            embeddings = model.encode(sentences, convert_to_tensor=True)
+            save_with_pickle(embeddings, pickle_path)
+            return embeddings
+    else:
+        return model.encode(sentences, convert_to_tensor=True)
 
-def find_most_similar(query, sentences, model):
+def find_most_similar(query, sentences, model, embeddings):
     if not query.strip() or not sentences:
         raise ValueError("Query or sentences list cannot be empty.")
     
     query_embedding = model.encode(query, convert_to_tensor=True)
-    sentence_embeddings = encode_sentences(model, sentences)
-    cosine_similarities = util.pytorch_cos_sim(query_embedding, sentence_embeddings).cpu().numpy().flatten()
+    cosine_similarities = util.pytorch_cos_sim(query_embedding, embeddings).cpu().numpy().flatten()
     most_similar_idx = np.argmax(cosine_similarities)
     
     return sentences[most_similar_idx], most_similar_idx, cosine_similarities[most_similar_idx]
 
 def load_csv_data(file_path):
-    return pd.read_csv(file_path)
+    """
+    Load a CSV file, handling potential encoding issues.
+    :param file_path: Path to the CSV file
+    :return: DataFrame with the loaded data
+    """
+    try:
+        return pd.read_csv(file_path, encoding='utf-8')
+    except UnicodeDecodeError:
+        # Try with a different encoding
+        print("Failed to decode the file with UTF-8. Retrying with 'latin1' encoding...")
+        return pd.read_csv(file_path, encoding='latin1')
 
 # Initialize BM25 model
 def initialize_bm25(sentences):
