@@ -24,7 +24,7 @@ data = models.load_csv_data(file_path)
 sentences = list(data["question"])
 embeddings = models.encode_sentences(sentence_model, sentences, embedding_pickle_path)
 
-@app.post("/hello", response_model=UserResponse)  # Route to handle query processing
+@app.post("/chatbot", response_model=UserResponse)  # Route to handle query processing
 async def get_answer(request_data: Query = Body(...)):
     query = request_data.query
     if query:
