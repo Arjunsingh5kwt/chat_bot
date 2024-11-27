@@ -2,6 +2,7 @@ from fastapi import FastAPI, Body
 from pydantic import BaseModel
 from src import models  # Import the model for query processing
 import uvicorn
+import pandas as pd
 
 app = FastAPI()
 
@@ -11,12 +12,13 @@ class Query(BaseModel):
 
 class UserResponse(BaseModel):
     response: str
+    content: str
 
 # Load the model and dataset
 sentence_model = models.load_model()
 
 # Paths for CSV and pickle
-file_path = r"extracted_title_slug.csv"
+file_path = r"updated_extracted_data.csv"
 embedding_pickle_path = r"sentence_embeddings.pkl"
 
 # Load data and precomputed embeddings
@@ -36,11 +38,18 @@ async def get_answer(request_data: Query = Body(...)):
         threshold = 0.50
         if similarity_score >= threshold:
             answer = data.iloc[most_similar_idx]["answer"]
-            return {"response": answer}
+            content = data.iloc[most_similar_idx]["content"]
+             # Check if the content cell is empty
+            # Check if content or answer is empty or invalid
+            if pd.isna(content) or content is None or content.strip() == "":
+                content = "N/A"
+            if pd.isna(answer) or answer is None or answer.strip() == "":
+                answer = "N/A"
+            return {"response": answer, "content": content}
         else:
-            return {"response": "Sorry, I don't understand the question."}
+            return {"response": "Sorry, I don't understand the question.", "content": "N/A"}
     else:
-        return {"response": "Query cannot be empty."}
+        return {"response": "Query cannot be empty.", "content": "N/A"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
