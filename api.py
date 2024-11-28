@@ -17,18 +17,18 @@ class UserResponse(BaseModel):
 # Load the model and dataset
 sentence_model = models.load_model()
 
-# Paths for CSV and pickle
-file_path = r"updated_extracted_data.csv"
-embedding_pickle_path = r"sentence_embeddings.pkl"
 
 # Load data and precomputed embeddings
-data = models.load_csv_data(file_path)
-sentences = list(data["question"])
-embeddings = models.encode_sentences(sentence_model, sentences, embedding_pickle_path)
 
 @app.post("/chatbot", response_model=UserResponse)  # Route to handle query processing
 async def get_answer(request_data: Query = Body(...)):
     query = request_data.query
+    # Paths for CSV and pickle
+    file_path = "extracted_title_slug.csv"
+    embedding_pickle_path = "sentence_embeddings.pkl"
+    data = models.load_csv_data(file_path)
+    sentences = list(data["title"])
+    embeddings = models.encode_sentences(sentence_model, sentences, embedding_pickle_path)
     if query:
         most_similar_sentence, most_similar_idx, similarity_score = models.find_most_similar(
             query, sentences, sentence_model, embeddings
@@ -37,15 +37,15 @@ async def get_answer(request_data: Query = Body(...)):
         # Apply threshold
         threshold = 0.50
         if similarity_score >= threshold:
-            answer = data.iloc[most_similar_idx]["answer"]
+            slug = data.iloc[most_similar_idx]["slug"]
             content = data.iloc[most_similar_idx]["content"]
              # Check if the content cell is empty
             # Check if content or answer is empty or invalid
             if pd.isna(content) or content is None or content.strip() == "":
                 content = "N/A"
-            if pd.isna(answer) or answer is None or answer.strip() == "":
+            if pd.isna(slug) or slug is None or slug.strip() == "":
                 answer = "N/A"
-            return {"response": answer, "content": content}
+            return {"response": slug, "content": content}
         else:
             return {"response": "Sorry, I don't understand the question.", "content": "N/A"}
     else:
