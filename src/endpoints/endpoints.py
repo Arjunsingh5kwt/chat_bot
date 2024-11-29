@@ -12,7 +12,7 @@ class UserResponse(BaseModel):
 # Define the model for input query
 class Update_bot(BaseModel):
     title: Optional[str] = None
-    slug: Optional[str] = None
+    slugs: Optional[str] = None
 
 class Update_bot_response(BaseModel):
     response: Optional[str] = None

@@ -35,12 +35,12 @@ async def get_answer(request_data: Query = Body(...)):
         # Apply threshold
         threshold = 0.50
         if similarity_score >= threshold:
-            slug = data.iloc[most_similar_idx]["slug"]
+            slugs = data.iloc[most_similar_idx]["slugs"]
              # Check if the content cell is empty
             # Check if content or answer is empty or invalid
-            if pd.isna(slug) or slug is None or slug.strip() == "":
+            if pd.isna(slugs) or slugs is None or slugs.strip() == "":
                 answer = "N/A"
-            return {"response": slug}
+            return {"response": slugs}
         else:
             return {"response": "Sorry, I don't understand the question."}
     else:
@@ -52,7 +52,7 @@ async def get_answer(request_data: Query = Body(...)):
 async def update_blog(
     request_data: Update_bot = Body(...)):
     title = request_data.title
-    slug = request_data.slug
+    slugs = request_data.slugs
     
     # Read existing CSV file
     df = pd.read_csv(file_path,encoding='latin')
@@ -60,21 +60,21 @@ async def update_blog(
     
     # Add a new post
     new_row = {"title": " ".join(title.split()),  # Remove extra spaces, keep single spaces
-           "slug": " ".join(slug.split())}
+           "slugs": " ".join(slugs.split())}
     # Check if the title already exists
     if title.strip().lower() in df["title"].str.strip().str.lower().values:
         # Fetch the existing row(s) with the same title
         existing_row = df[df["title"] == title] 
         if not existing_row.empty: 
-            # Check if the slug and content are different
-            if not (existing_row["slug"].str.strip().str.lower().values[0] == slug.strip().lower()): 
-                # Update the slug and content for the existing title
-                df.loc[df["title"] == title, "slug"] = " ".join(slug.split())
+            # Check if the slugs and content are different
+            if not (existing_row["slugs"].str.strip().str.lower().values[0] == slugs.strip().lower()): 
+                # Update the slugs and content for the existing title
+                df.loc[df["title"] == title, "slugs"] = " ".join(slugs.split())
                 print(f"Updated the existing entry for title: {title}")
             else:
-                print(f"No changes needed for title: {title}, slug is same.")
+                print(f"No changes needed for title: {title}, slugs is same.")
         else:
-            print("No changes needed for title: {title}, slug is same..")
+            print("No changes needed for title: {title}, slugs is same..")
     else:
         # Append the new row if title doesn't exist
         df = df._append(new_row, ignore_index=True)
@@ -93,7 +93,7 @@ async def update_blog(
     jsonresponse= {
         "response":"done"
     }
-    # response = {"slug": slug, "content": content}
+    # response = {"slugs": slugs, "content": content}
     return jsonresponse
 
 if __name__ == "__main__":

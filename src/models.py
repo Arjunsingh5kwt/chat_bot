@@ -50,11 +50,11 @@ def load_csv_data(file_path):
     :return: DataFrame with the loaded data
     """
     try:
-        return pd.read_csv(file_path, encoding='utf-8')
+        return pd.read_csv(file_path, encoding='latin-1')
     except UnicodeDecodeError:
         # Try with a different encoding
-        print("Failed to decode the file with UTF-8. Retrying with 'latin1' encoding...")
-        return pd.read_csv(file_path, encoding='latin')
+        print("Failed to decode the file with latin-1 . Retrying with 'utf-8' encoding...")
+        return pd.read_csv(file_path, encoding='utf-8')
 
 # Initialize BM25 model
 def initialize_bm25(sentences):
