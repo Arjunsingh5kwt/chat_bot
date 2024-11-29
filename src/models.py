@@ -54,7 +54,7 @@ def load_csv_data(file_path):
     except UnicodeDecodeError:
         # Try with a different encoding
         print("Failed to decode the file with UTF-8. Retrying with 'latin1' encoding...")
-        return pd.read_csv(file_path, encoding='latin1')
+        return pd.read_csv(file_path, encoding='latin')
 
 # Initialize BM25 model
 def initialize_bm25(sentences):
