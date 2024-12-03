@@ -23,24 +23,37 @@ embedding_pickle_path = "sentence_embeddings.pkl"
 @app.post("/chatbot", response_model=UserResponse)  # Route to handle query processing
 async def get_answer(request_data: Query = Body(...)):
     query = request_data.query
+    
     # Paths for CSV and pickle
     data = models.load_csv_data(file_path)
     sentences = list(data["title"])
     embeddings = models.encode_sentences(sentence_model, sentences, embedding_pickle_path)
+    
     if query:
-        most_similar_sentence, most_similar_idx, similarity_score = models.find_most_similar(
-            query, sentences, sentence_model, embeddings
-        )
-
+        # Find the top 3 most similar sentences
+        top_k_results = models.find_top_k_similar(query, sentences, sentence_model, embeddings, k=3)
+        
+        # Extract the top 3 matches (sentence, index, similarity score)
+        top_matches = [
+            {
+                "sentence": data.iloc[result[1]]["slugs"],
+                "similarity": result[2]
+            }
+            for result in top_k_results
+        ]
+        
         # Apply threshold
         threshold = 0.50
-        if similarity_score >= threshold:
-            slugs = data.iloc[most_similar_idx]["slugs"]
-             # Check if the content cell is empty
-            # Check if content or answer is empty or invalid
-            if pd.isna(slugs) or slugs is None or slugs.strip() == "":
-                answer = "N/A"
-            return {"response": slugs}
+        filtered_matches = [
+            match for match in top_matches if match["similarity"] >= threshold
+        ]
+        
+        if filtered_matches:
+            # Include a fallback if slugs are empty or invalid
+            for match in filtered_matches:
+                if pd.isna(match["sentence"]) or match["sentence"].strip() == "":
+                    match["sentence"] = "N/A"
+            return {"response": filtered_matches}
         else:
             return {"response": "Sorry, I don't understand the question."}
     else:

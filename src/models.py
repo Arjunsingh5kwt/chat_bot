@@ -2,6 +2,7 @@ import pickle
 from sentence_transformers import SentenceTransformer, util
 from rank_bm25 import BM25Okapi
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import pandas as pd
 
@@ -106,3 +107,28 @@ def hybrid_similarity(query, sentences, bm25_model, tfidf_vectorizer, tfidf_matr
     # Find the best match
     best_idx = np.argmax(hybrid_scores)
     return sentences[best_idx], best_idx, hybrid_scores[best_idx]
+
+
+def find_top_k_similar(query, sentences, sentence_model, embeddings, k=3):
+    """
+    Finds the top k most similar sentences to the query.
+    """
+    if len(sentences) == 0 or len(embeddings) == 0:
+        raise ValueError("Sentences list or embeddings are empty.")
+    if len(sentences) != len(embeddings):
+        raise ValueError("Mismatch between number of sentences and embeddings.")
+    
+    # Compute the embedding for the query
+    query_embedding = sentence_model.encode([query])
+    
+    # Compute cosine similarities
+    similarity_scores = cosine_similarity(query_embedding, embeddings)[0]
+    
+    # Adjust k if it exceeds the number of sentences
+    k = min(k, len(sentences))
+    
+    # Get the indices of the top k scores
+    top_k_indices = np.argsort(similarity_scores)[::-1][:k]
+    
+    # Return the top k sentences, indices, and similarity scores
+    return [(sentences[idx], idx, similarity_scores[idx]) for idx in top_k_indices]

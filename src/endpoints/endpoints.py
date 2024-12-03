@@ -1,13 +1,17 @@
 from pydantic import BaseModel
 from typing import Optional
+from typing import List
 
-
+class SimilarityResult(BaseModel):
+    sentence: str
+    
+    
 # Define the model for input query
 class Query(BaseModel):
     query: str
 
 class UserResponse(BaseModel):
-    response:  Optional[str] = None
+    response: List[SimilarityResult]
     
 # Define the model for input query
 class Update_bot(BaseModel):
