@@ -3,7 +3,8 @@ from typing import Optional
 from typing import List
 
 class SimilarityResult(BaseModel):
-    sentence: str
+    answer: str
+    slugs: str
     
     
 # Define the model for input query
@@ -16,6 +17,7 @@ class UserResponse(BaseModel):
 # Define the model for input query
 class Update_bot(BaseModel):
     title: Optional[str] = None
+    answer: Optional[str] = None
     slugs: Optional[str] = None
 
 class Update_bot_response(BaseModel):
