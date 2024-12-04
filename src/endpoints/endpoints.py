@@ -3,9 +3,11 @@ from typing import Optional
 from typing import List
 
 class SimilarityResult(BaseModel):
+    id: int
     answer: str
     slugs: str
     
+
     
 # Define the model for input query
 class Query(BaseModel):

@@ -36,6 +36,7 @@ async def get_answer(request_data: Query = Body(...)):
         # Extract the top 3 matches (sentence, index, similarity score)
         top_matches = [
             {
+                "id": data.iloc[result[1]]["id"],
                 "answer": data.iloc[result[1]]["answer"],
                 "slugs": data.iloc[result[1]]["slugs"],
                 "similarity": result[2]
