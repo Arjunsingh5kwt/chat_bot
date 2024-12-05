@@ -39,6 +39,7 @@ async def get_answer(request_data: Query = Body(...)):
                 "id": data.iloc[result[1]]["id"],
                 "answer": data.iloc[result[1]]["answer"],
                 "slugs": data.iloc[result[1]]["slugs"],
+                "types": data.iloc[result[1]]["types"],
                 "similarity": result[2]
             }
             for result in top_k_results
@@ -61,6 +62,9 @@ async def get_answer(request_data: Query = Body(...)):
                 # Include a fallback if slugs are empty or invalid
                 if pd.isna(match["slugs"]) or match["slugs"].strip() == "":
                     match["slugs"] = "N/A"
+                # Include a fallback if types are empty or invalid
+                if pd.isna(match["types"]) or match["types"].strip() == "":
+                    match["types"] = "N/A"
             
             return {"response": filtered_matches}
         else:
@@ -70,20 +74,27 @@ async def get_answer(request_data: Query = Body(...)):
 
 
 
+ # Read existing CSV file
+df = pd.read_csv(file_path, encoding='latin')
+
 @app.post("/update-blog", response_model=Update_bot_response)
 async def update_blog(
     request_data: Update_bot = Body(...)):
+    id = request_data.id
     title = request_data.title
     answer = request_data.answer
     slugs = request_data.slugs
+    types = request_data.types
 
-    # Read existing CSV file
-    df = pd.read_csv(file_path, encoding='latin')
+   
+    
 
     # Add a new post
     new_row = {
+        "id": id,  # Remove extra spaces, keep single spaces
         "title": " ".join(title.split()),  # Remove extra spaces, keep single spaces
         "answer": " ".join(answer.split()),
+        "types": " ".join(types.split()),
         "slugs": " ".join(slugs.split())
     }
 
@@ -91,22 +102,60 @@ async def update_blog(
     if title.strip().lower() in df["title"].str.strip().str.lower().values:
         # Fetch the existing row(s) with the same title
         existing_row = df[df["title"].str.strip().str.lower() == title.strip().lower()]
+        
         if not existing_row.empty: 
-            # Check if the slugs and content are different
-            if not (existing_row["answer"].str.strip().str.lower().values[0] == answer.strip().lower()) or not (existing_row["slugs"].str.strip().str.lower().values[0] == slugs.strip().lower()): 
+            #for the blogs
+            if types.strip().lower() == "blogs":
+                # Check if the id already exists in the "blogs" type
+                if id in df[df["types"].str.strip().str.lower() == "blogs"]["id"].values:
+                    # Check if the title is also the same for this id
+                    existing_title = df[(df["types"].str.strip().str.lower() == "blogs") & (df["id"] == id)]["title"]
+                    if not existing_title.empty and existing_title.values[0].strip().lower() != title.strip().lower():
+                        return {"response": "Error: ID already exists for a different title in 'blogs'."}
+                    
+                # Check if the slugs and content are different
+                if not (existing_row["answer"].str.strip().str.lower().values[0] == answer.strip().lower()) or \
+                not (existing_row["slugs"].str.strip().str.lower().values[0] == slugs.strip().lower()) or \
+                not (existing_row["types"].str.strip().str.lower().values[0] == types.strip().lower()): 
+                    
+                    # If answer, slugs, or types are empty, set them to a single space " "
+                    answer = " " if not answer.strip() else answer
+                    slugs = " " if not slugs.strip() else slugs
+                    types = " " if not types.strip() else types
+                    
+                    # Update the slugs and content for the existing title
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "id"] = id
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "answer"] = " ".join(answer.split())
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "slugs"] = " ".join(slugs.split())
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "types"] = " ".join(types.split())
+                    print(f"Updated the existing entry for title: {title}")
+                else:
+                    print(f"No changes needed for title: {title}, answer and slugs are the same.")
+
+            #for faq  
+            if types.strip().lower() == "faq":
+                if id in df[df["types"].str.strip().str.lower() == "faq"]["id"].values:
+                    # Check if the title is also the same for this id
+                    existing_title = df[(df["types"].str.strip().str.lower() == "faq") & (df["id"] == id)]["title"]
+                    if not existing_title.empty and existing_title.values[0].strip().lower() != title.strip().lower():
+                        return {"response": "Error: ID already exists for a different title in 'faq'."}
+                    
+                # Check if the slugs and content are different
+                if not (existing_row["answer"].str.strip().str.lower().values[0] == answer.strip().lower()) or not (existing_row["slugs"].str.strip().str.lower().values[0] == slugs.strip().lower()) or not (existing_row["types"].str.strip().str.lower().values[0] == types.strip().lower()): 
                 
-                # If answer or slugs are empty, set them to a single space " "
-                if not answer.strip():
-                    answer = " "  # Set to space if empty
-                if not slugs.strip():
-                    slugs = " "  # Set to space if empty
-                
-                # Update the slugs and content for the existing title
-                df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "answer"] = " ".join(answer.split())
-                df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "slugs"] = " ".join(slugs.split())
-                print(f"Updated the existing entry for title: {title}")
-            else:
-                print(f"No changes needed for title: {title}, answer and slugs are the same.")
+                    # If answer, slugs, or types are empty, set them to a single space " "
+                    answer = " " if not answer.strip() else answer
+                    slugs = " " if not slugs.strip() else slugs
+                    types = " " if not types.strip() else types
+                    
+                    # Update the slugs and content for the existing title
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "id"] = id
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "answer"] = " ".join(answer.split())
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "slugs"] = " ".join(slugs.split())
+                    df.loc[df["title"].str.strip().str.lower() == title.strip().lower(), "types"] = " ".join(types.split())
+                    print(f"Updated the existing entry for title: {title}")
+                else:
+                    print(f"No changes needed for title: {title}, answer and slugs are the same.")
         else:
             print(f"No changes needed for title: {title}, it could be missing data.")
     else:
