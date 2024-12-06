@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from typing import List
+from typing import List, Union, Optional
 
 class SimilarityResult(BaseModel):
     id: int
@@ -15,7 +16,7 @@ class Query(BaseModel):
     query: str
 
 class UserResponse(BaseModel):
-    response: List[SimilarityResult]
+    response: Union[List[SimilarityResult], str]
     
 # Define the model for input query
 class Update_bot(BaseModel):
